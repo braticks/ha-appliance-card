@@ -1,3 +1,38 @@
+# HA Appliance Card — braticks fork
+
+Based on [ADNPolymerase/ha-appliance-card](https://github.com/ADNPolymerase/ha-appliance-card).
+
+Adds `air_purifier` with a Xiaomi-style illustration, animated airflow while running, and an appliance selector entry. Existing appliance types remain supported.
+
+## Install with HACS
+
+Add `https://github.com/braticks/ha-appliance-card` as a custom repository with category **Dashboard**, then download it. Use the default branch if no release is listed. Replace the original installation; load only one resource registering `ha-appliance-card`. Reload the browser after installation.
+
+```yaml
+type: custom:ha-appliance-card
+appliance_type: air_purifier
+name: Oro valytuvas
+compact: false
+illustration_color: white
+state_entity: fan.zhimi_de_754022548_mb5_s_2_air_purifier
+state_map:
+  "on": running
+  "off": idle
+tap_action:
+  action: none
+info_entities:
+  - entity: sensor.zhimi_de_754022548_mb5_pm2_5_density_p_3_4
+    label: PM2.5
+    icon: mdi:air-filter
+  - entity: sensor.zhimi_de_754022548_mb5_filter_life_level_p_4_1
+    label: Filtro likutis
+    icon: mdi:air-filter
+```
+
+No control buttons are configured in this example. Omit `start_entity`, `pause_entity`, `resume_entity`, `stop_entity`, `toggle_entity`, and `light_entity` on other cards for informational displays.
+
+---
+
 # HA Appliance Card
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://github.com/hacs/integration)
