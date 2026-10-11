@@ -1,4 +1,4 @@
-const CARD_VERSION = "2.23.2";
+const CARD_VERSION = "2.23.2-purifier.1";
 
 console.info(
   "%c HA-APPLIANCE-CARD %c v" + CARD_VERSION + " ",
@@ -4297,6 +4297,8 @@ const TYPE_CAPS = {
   // the current that go with it.
   ev_charger: { evCharger: true },
 };
+TYPE_CAPS.air_purifier = {};
+for (const locale of Object.values(T)) locale.type_air_purifier = "Air purifier";
 const APPLIANCE_TYPES = Object.keys(TYPE_CAPS);
 const LAUNDRY_TYPES = ["washer", "dryer", "dishwasher"];
 // Fields no other type has. Their presence identifies a fridge on its own,
@@ -4371,6 +4373,7 @@ function caps(type) {
 
 function detectApplianceType(cfg, st) {
   if (cfg.appliance_type && cfg.appliance_type !== "auto") return cfg.appliance_type;
+  if (/air.?purifier|oro valytuvas|zhimi/i.test(cfg.state_entity + " " + (st?.attributes?.friendly_name || ""))) return "air_purifier";
   // A fridge-only field settles it before any name matching: those keys mean
   // nothing on the other seven types, and a fridge may have no state entity
   // whose name could be matched in the first place.
@@ -7161,6 +7164,23 @@ const ILLUSTRATION_CSS = {
 const EV_PLUG_PARTS = '<i class="pl-boot"></i><i class="pl-grip"></i><i class="pl-collar"></i><i class="pl-head"></i>'
   + '<i class="pl-ac"></i><i class="pl-dc"></i><i class="pl-latch"></i>';
 
+ILLUSTRATION_CSS.air_purifier = (color) => `
+  .ap-body { position:absolute; left:20px; top:14px; width:56px; height:88px; border-radius:8px 8px 5px 5px; background:linear-gradient(90deg,var(--ac-body-lo,#cbd0d2),var(--ac-body-hi,#fafafa) 35%,var(--ac-body,#e6e9eb)); box-shadow:inset 0 0 0 1px #aeb4b8,0 3px 4px #0002; }
+  .ap-grille { position:absolute; left:23px; top:11px; width:50px; height:8px; border-radius:50%; background:repeating-linear-gradient(90deg,#444b50 0 1px,#9da4a9 1px 3px); border:1px solid #aaa; }
+  .ap-vents { position:absolute; left:24px; top:57px; width:48px; height:39px; background:radial-gradient(circle,#8d959c 0.65px,transparent 0.9px) 0 0/3px 3px; opacity:.55; }
+  .ap-screen { position:absolute; left:33px; top:28px; width:30px; height:30px; border-radius:50%; background:#20282c; border:2px solid #c4cbce; display:flex; align-items:center; justify-content:center; color:#a8b1b5; font-size:9px; font-family:monospace; box-sizing:border-box; }
+  .ap-screen::after { content:""; position:absolute; width:15px; height:2px; background:#677379; bottom:5px; border-radius:2px; }
+  .machine.spinning .ap-screen { color:#d5fff1; box-shadow:0 0 6px #50dfa64d; }
+  .machine.spinning .ap-screen::after { background:${color}; }
+  .ap-air { position:absolute; top:0; width:2px; height:10px; border-radius:2px; background:#69cdbb; opacity:0; }
+  .ap-air.a1 { left:34px; } .ap-air.a2 { left:47px; } .ap-air.a3 { left:60px; }
+  .machine.spinning .ap-air { animation:ap-flow 1.8s ease-out infinite; animation-delay:var(--anim-offset,0s); }
+  .machine.spinning .ap-air.a2 { animation-delay:calc(var(--anim-offset,0s) - .6s); }
+  .machine.spinning .ap-air.a3 { animation-delay:calc(var(--anim-offset,0s) - 1.2s); }
+  @keyframes ap-flow { 0% { transform:translateY(7px); opacity:0; } 30% { opacity:.85; } 100% { transform:translateY(-9px); opacity:0; } }
+  @media (prefers-reduced-motion:reduce) { .machine.spinning .ap-air { animation:none; opacity:.5; } }
+`;
+
 function illustrationCss(type, color) {
   const family = type === "dishwasher" ? "dishwasher" : LAUNDRY_TYPES.includes(type) ? "laundry" : type;
   const fn = ILLUSTRATION_CSS[family] || ILLUSTRATION_CSS.laundry;
@@ -7303,6 +7323,9 @@ function fridgeHtml(ctx) {
 }
 
 function illustrationHtml(type, ctx) {
+  if (type === "air_purifier") {
+    return `<div class="machine ${ctx.spinning ? "spinning" : ""}" aria-hidden="true"><div class="ap-body"></div><div class="ap-grille"></div><div class="ap-vents"></div><div class="ap-screen">${ctx.spinning ? "ON" : "OFF"}</div><i class="ap-air a1"></i><i class="ap-air a2"></i><i class="ap-air a3"></i></div>`;
+  }
   const cls = [
     ctx.spinning ? "spinning" : "",
     ctx.heating ? "heating" : "",
@@ -11709,6 +11732,7 @@ class ApplianceCardEditor extends HTMLElement {
           type: "select",
           options: [
             { value: "auto", label: t(hass, "type_auto") },
+            { value: "air_purifier", label: t(hass, "type_air_purifier") },
             { value: "washer", label: t(hass, "type_washer") },
             { value: "dryer", label: t(hass, "type_dryer") },
             { value: "dishwasher", label: t(hass, "type_dishwasher") },
@@ -11894,6 +11918,7 @@ class ApplianceCardEditor extends HTMLElement {
         water_heater: ["water_heater"], boiler: ["water_heater"], heat_pump: ["climate", "water_heater"],
         pellet_stove: ["climate"], air_conditioner: ["climate", "select", "switch"], dehumidifier: ["humidifier", "switch"],
         space_heater: ["climate", "switch"], towel_warmer: ["climate", "select", "switch"], iron: ["switch"], air_fryer: ["switch"],
+        air_purifier: ["fan", "switch"],
         pet_fountain: ["switch", "fan", "input_boolean"],
       }[this._type] || []),
     });
